@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tic-Tac-Toe</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet" />
+  <style>
+    /* warm paper-and-ink look. nothing too slick on purpose. */
+    :root {
+      --paper: #f5eddd;
+      --paper-line: #d9cdb4;
+      --ink: #2f2a25;
+      --ink-soft: #6b6258;
+      --x-ink: #c4503a;       /* faded barn red */
+      --o-ink: #2f6f8f;       /* dusty teal-blue */
+      --gold: #d9a441;
+      --shadow: rgba(60, 48, 30, 0.18);
+    }
+
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; }
+
+    body {
+      font-family: "Nunito", system-ui, sans-serif;
+      color: var(--ink);
+      background-color: #f5eddd;
+      background-image:
+        radial-gradient(circle at 20% 18%, rgba(255,255,255,0.55), transparent 45%),
+        radial-gradient(circle at 82% 78%, rgba(196,176,140,0.22), transparent 50%),
+        repeating-linear-gradient(0deg, transparent 0 27px, rgba(180,160,120,0.07) 27px 28px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 32px 18px;
+    }
+
+    .table { width: 100%; max-width: 430px; }
+
+    .masthead { text-align: center; margin-bottom: 18px; }
+    h1 {
+      font-family: "Caveat", cursive;
+      font-size: clamp(2.8rem, 9vw, 3.9rem);
+      font-weight: 700;
+      margin: 0;
+      line-height: 0.95;
+      transform: rotate(-1.4deg);
+      color: var(--ink);
+    }
+    .tagline {
+      font-size: 0.92rem;
+      color: var(--ink-soft);
+      margin: 4px 0 0;
+      font-style: italic;
+    }
+
+    .mode-switch {
+      display: flex;
+      gap: 6px;
+      justify-content: center;
+      margin: 0 auto 20px;
+      background: rgba(255,255,255,0.5);
+      border: 1.5px solid var(--paper-line);
+      border-radius: 999px;
+      padding: 4px;
+      width: max-content;
+    }
+    .mode {
+      border: 0;
+      background: transparent;
+      font: inherit;
+      font-weight: 700;
+      font-size: 0.85rem;
+      color: var(--ink-soft);
+      padding: 7px 16px;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: background 0.18s ease, color 0.18s ease;
+    }
+    .mode[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
+
+    .scoreboard {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .score {
+      background: rgba(255,255,255,0.55);
+      border: 1.5px solid var(--paper-line);
+      border-radius: 12px;
+      padding: 9px 6px 7px;
+      text-align: center;
+    }
+    .score--x { transform: rotate(-0.8deg); }
+    .score--draw { transform: rotate(0.5deg); }
+    .score--o { transform: rotate(1deg); }
+    .who {
+      display: block;
+      font-size: 0.72rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--ink-soft);
+      font-weight: 700;
+    }
+    .tally {
+      display: block;
+      font-family: "Caveat", cursive;
+      font-size: 2.1rem;
+      font-weight: 700;
+      line-height: 1;
+      margin-top: 2px;
+    }
+    .score--x .tally { color: var(--x-ink); }
+    .score--o .tally { color: var(--o-ink); }
+
+    .turn-note {
+      text-align: center;
+      font-weight: 700;
+      font-size: 1rem;
+      margin: 4px 0 14px;
+      min-height: 1.4em;
+      color: var(--ink);
+    }
+    .turn-note.win { color: var(--gold); }
+
+    .board {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      aspect-ratio: 1 / 1;
+      position: relative;
+      background: rgba(255,255,255,0.4);
+      border-radius: 14px;
+      padding: 8px;
+    }
+    .cell {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 0;
+      background: transparent;
+      cursor: pointer;
+      font-family: "Caveat", cursive;
+      font-weight: 700;
+      font-size: clamp(3rem, 18vw, 4.6rem);
+      color: var(--ink);
+      -webkit-tap-highlight-color: transparent;
+    }
+    .cell::after { content: ""; position: absolute; background: var(--ink); opacity: 0.78; border-radius: 4px; }
+    .cell:not(:nth-child(3n))::before {
+      content: "";
+      position: absolute;
+      right: -1px; top: 8%;
+      width: 3px; height: 84%;
+      background: var(--ink);
+      opacity: 0.8;
+      border-radius: 4px;
+      transform: rotate(0.4deg);
+    }
+    .cell:nth-child(-n+6)::after {
+      left: 8%; bottom: -1px;
+      height: 3px; width: 84%;
+      transform: rotate(-0.3deg);
+    }
+    .cell:nth-child(n+7)::after { content: none; }
+
+    .cell:hover:not(.taken) { background: rgba(217,164,65,0.10); }
+    .cell:focus-visible { outline: 2px dashed var(--gold); outline-offset: -6px; }
+
+    .mark { display: inline-block; filter: url(#wobble); animation: drop-in 0.22s ease-out; }
+    .mark--x { color: var(--x-ink); transform: rotate(-6deg); }
+    .mark--o { color: var(--o-ink); transform: rotate(4deg); }
+
+    @keyframes drop-in {
+      from { opacity: 0; transform: scale(0.5) rotate(-12deg); }
+      to   { opacity: 1; }
+    }
+
+    .cell.win .mark {
+      text-shadow: 0 0 14px rgba(217,164,65,0.9);
+      animation: pulse 0.9s ease-in-out infinite alternate;
+    }
+    @keyframes pulse {
+      from { transform: scale(1) rotate(-3deg); }
+      to   { transform: scale(1.12) rotate(2deg); }
+    }
+
+    .board.locked .cell:not(.taken) { cursor: default; }
+
+    .controls {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      margin-top: 22px;
+    }
+    .btn {
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+      border-radius: 10px;
+      padding: 10px 20px;
+      transition: transform 0.12s ease, box-shadow 0.12s ease;
+    }
+    .btn:active { transform: translateY(1px); }
+    .btn--ghost {
+      background: var(--ink);
+      color: var(--paper);
+      border: 1.5px solid var(--ink);
+      box-shadow: 3px 3px 0 var(--shadow);
+    }
+    .btn--ghost:hover { box-shadow: 5px 5px 0 var(--shadow); }
+    .btn--quiet {
+      background: transparent;
+      color: var(--ink-soft);
+      border: 1.5px solid var(--paper-line);
+    }
+    .btn--quiet:hover { color: var(--ink); border-color: var(--ink-soft); }
+
+    @media (max-width: 360px) { .mode { padding: 7px 11px; } }
+  </style>
+</head>
+<body>
+  <main class="table">
+    <header class="masthead">
+      <h1>tic&middot;tac&middot;toe</h1>
+      <p class="tagline">three in a row wins. simple as that.</p>
+    </header>
+
+    <!-- who's playing -->
+    <div class="mode-switch" role="group" aria-label="Game mode">
+      <button class="mode" data-mode="cpu" aria-pressed="true">vs. computer</button>
+      <button class="mode" data-mode="human" aria-pressed="false">two players</button>
+    </div>
+
+    <!-- the scoreboard, kept on a little notepad -->
+    <section class="scoreboard">
+      <div class="score score--x">
+        <span class="who" data-x-label>You</span>
+        <span class="tally" data-score-x>0</span>
+      </div>
+      <div class="score score--draw">
+        <span class="who">Draws</span>
+        <span class="tally" data-score-draw>0</span>
+      </div>
+      <div class="score score--o">
+        <span class="who" data-o-label>CPU</span>
+        <span class="tally" data-score-o>0</span>
+      </div>
+    </section>
+
+    <p class="turn-note" data-status>Your move &mdash; you're X</p>
+
+    <div class="board" data-board aria-label="Tic tac toe board"></div>
+
+    <div class="controls">
+      <button class="btn btn--ghost" data-reset>new round</button>
+      <button class="btn btn--quiet" data-wipe>reset scores</button>
+    </div>
+  </main>
+
+  <!-- a touch of roughness so the strokes don't feel laser-cut -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <filter id="wobble">
+      <feTurbulence type="fractalNoise" baseFrequency="0.012" numOctaves="2" result="noise" seed="7" />
+      <feDisplacementMap in="SourceGraphic" in2="noise" scale="3.5" />
+    </filter>
+  </svg>
+
+  <script>
+    // Tic-tac-toe. You are X, the computer (or a friend) is O.
+    // State lives in a flat array of 9 — index 0 is top-left, 8 is bottom-right.
+
+    const boardEl  = document.querySelector("[data-board]");
+    const statusEl = document.querySelector("[data-status]");
+    const modeBtns = document.querySelectorAll(".mode");
+
+    const scoreEls = {
+      X:    document.querySelector("[data-score-x]"),
+      O:    document.querySelector("[data-score-o]"),
+      draw: document.querySelector("[data-score-draw]"),
+    };
+    const oLabel = document.querySelector("[data-o-label]");
+    const xLabel = document.querySelector("[data-x-label]");
+
+    // every line that wins you the game
+    const LINES = [
+      [0,1,2],[3,4,5],[6,7,8],   // rows
+      [0,3,6],[1,4,7],[2,5,8],   // cols
+      [0,4,8],[2,4,6],           // diagonals
+    ];
+
+    let cells   = Array(9).fill("");
+    let turn    = "X";          // X always opens — feels fair
+    let vsCpu   = true;
+    let locked  = false;        // true while the round is over or CPU is "thinking"
+    const score = { X: 0, O: 0, draw: 0 };
+
+    // --- build the 9 cells once ---
+    for (let i = 0; i < 9; i++) {
+      const cell = document.createElement("button");
+      cell.className = "cell";
+      cell.dataset.i = i;
+      cell.setAttribute("aria-label", `cell ${i + 1}`);
+      cell.addEventListener("click", () => play(Number(cell.dataset.i)));
+      boardEl.appendChild(cell);
+    }
+
+    // --- a turn ---
+    function play(i) {
+      if (locked || cells[i]) return;       // taken or game's done
+      mark(i, turn);
+
+      let result = judge();
+      if (result) return finish(result);
+
+      turn = turn === "X" ? "O" : "X";
+      updateStatus();
+
+      // hand it to the computer if it's O's turn in CPU mode
+      if (vsCpu && turn === "O") {
+        locked = true;
+        boardEl.classList.add("locked");
+        // a short pause so it doesn't feel instant/robotic
+        setTimeout(() => {
+          const move = bestMove();
+          mark(move, "O");
+          const r = judge();
+          if (r) return finish(r);
+          turn = "X";
+          locked = false;
+          boardEl.classList.remove("locked");
+          updateStatus();
+        }, 380 + Math.random() * 320);
+      }
+    }
+
+    function mark(i, player) {
+      cells[i] = player;
+      const cell = boardEl.children[i];
+      cell.classList.add("taken");
+      const span = document.createElement("span");
+      span.className = `mark mark--${player.toLowerCase()}`;
+      span.textContent = player;
+      cell.appendChild(span);
+    }
+
+    // returns {winner, line}, {winner:"draw"}, or null (game continues)
+    function judge() {
+      for (const line of LINES) {
+        const [a, b, c] = line;
+        if (cells[a] && cells[a] === cells[b] && cells[a] === cells[c]) {
+          return { winner: cells[a], line };
+        }
+      }
+      return cells.every(Boolean) ? { winner: "draw" } : null;
+    }
+
+    function finish(result) {
+      locked = true;
+      boardEl.classList.add("locked");
+
+      if (result.winner === "draw") {
+        score.draw++;
+        say("Cat's game — nobody wins.", false);
+      } else {
+        score[result.winner]++;
+        result.line.forEach(i => boardEl.children[i].classList.add("win"));
+        const who = winnerName(result.winner);
+        // "You take it!" but "The computer takes it!" / "Player X takes it!"
+        const verb = (vsCpu && result.winner === "X") ? "take" : "takes";
+        say(`${who} ${verb} it!`, true);
+      }
+      paintScores();
+    }
+
+    // --- the opponent's brain: minimax, so it never loses ---
+    function bestMove() {
+      let best = { score: -Infinity, i: null };
+      for (let i = 0; i < 9; i++) {
+        if (cells[i]) continue;
+        cells[i] = "O";
+        const s = minimax(false);
+        cells[i] = "";
+        if (s > best.score) best = { score: s, i };
+      }
+      return best.i;
+    }
+
+    function minimax(maximizing) {
+      const r = judge();
+      if (r) {
+        if (r.winner === "O") return 10;
+        if (r.winner === "X") return -10;
+        return 0; // draw
+      }
+      let best = maximizing ? -Infinity : Infinity;
+      for (let i = 0; i < 9; i++) {
+        if (cells[i]) continue;
+        cells[i] = maximizing ? "O" : "X";
+        const s = minimax(!maximizing);
+        cells[i] = "";
+        best = maximizing ? Math.max(best, s) : Math.min(best, s);
+      }
+      return best;
+    }
+
+    // --- text helpers ---
+    function winnerName(p) {
+      if (!vsCpu) return p === "X" ? "Player X" : "Player O";
+      return p === "X" ? "You" : "The computer";
+    }
+
+    function updateStatus() {
+      if (vsCpu) {
+        say(turn === "X" ? "Your move — you're X" : "Computer is thinking…", false);
+      } else {
+        say(`Player ${turn}'s turn`, false);
+      }
+    }
+
+    function say(text, isWin) {
+      statusEl.textContent = text;
+      statusEl.classList.toggle("win", !!isWin);
+    }
+
+    function paintScores() {
+      scoreEls.X.textContent    = score.X;
+      scoreEls.O.textContent    = score.O;
+      scoreEls.draw.textContent = score.draw;
+    }
+
+    // --- new round (keeps the score) ---
+    function newRound() {
+      cells = Array(9).fill("");
+      turn  = "X";
+      locked = false;
+      boardEl.classList.remove("locked");
+      for (const cell of boardEl.children) {
+        cell.className = "cell";
+        cell.innerHTML = "";
+      }
+      updateStatus();
+    }
+
+    // --- wire up the buttons ---
+    document.querySelector("[data-reset]").addEventListener("click", newRound);
+
+    document.querySelector("[data-wipe]").addEventListener("click", () => {
+      score.X = score.O = score.draw = 0;
+      paintScores();
+      newRound();
+    });
+
+    modeBtns.forEach(btn => {
+      btn.addEventListener("click", () => {
+        vsCpu = btn.dataset.mode === "cpu";
+        modeBtns.forEach(b => b.setAttribute("aria-pressed", String(b === btn)));
+        oLabel.textContent = vsCpu ? "CPU" : "O";
+        xLabel.textContent = vsCpu ? "You" : "X";
+        newRound();
+      });
+    });
+
+    updateStatus();
+  </script>
+</body>
+</html>
