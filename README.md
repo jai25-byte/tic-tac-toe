@@ -42,6 +42,7 @@ There is no build step, package manager, or server requirement. The game works w
 
 ## Project structure
 
+- `.gitignore` — keeps `.claude/` settings and macOS `.DS_Store` files out of the repository.
 - `index.html` — page markup, styles, board creation, game rules, scoring, and the minimax opponent in one file.
 - `README.md` — this project overview and run guide.
 
